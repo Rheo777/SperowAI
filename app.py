@@ -13,34 +13,32 @@ class CustomJSONEncoder(JSONEncoder):
         except TypeError:
             return str(obj)
 
-def create_app():
-    app = Flask(__name__)
-    app.config.from_object(Config)
-    app.json_encoder = CustomJSONEncoder  # Set custom JSON encoder
-    
-    # JWT Configuration
-    app.config['JWT_SECRET_KEY'] = app.config['SECRET_KEY']
-    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
-    app.config['PROPAGATE_EXCEPTIONS'] = True
-    
-    # Initialize extensions
-    init_mongo(app)
-    jwt.init_app(app)
-    
-    # Register blueprints
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(medical_bp, url_prefix='/api')
-    
-    # Error handler for JWT
-    @jwt.invalid_token_loader
-    def invalid_token_callback(error):
-        return jsonify({
-            'message': 'Invalid token',
-            'error': 'invalid_token'
-        }), 401
-    
-    return app
+app = Flask(__name__)
+app.config.from_object(Config)
+app.json_encoder = CustomJSONEncoder  # Set custom JSON encoder
+
+# JWT Configuration
+app.config['JWT_SECRET_KEY'] = app.config['SECRET_KEY']
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+app.config['PROPAGATE_EXCEPTIONS'] = True
+
+# Initialize extensions
+init_mongo(app)
+jwt.init_app(app)
+
+# Register blueprints
+app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(medical_bp, url_prefix='/api')
+
+# Error handler for JWT
+@jwt.invalid_token_loader
+def invalid_token_callback(error):
+    return jsonify({
+        'message': 'Invalid token',
+        'error': 'invalid_token'
+    }), 401
 
 if __name__ == '__main__':
-    app = create_app()
-    app.run(debug=True) 
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
