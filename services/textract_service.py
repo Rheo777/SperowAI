@@ -1,14 +1,23 @@
 import boto3
 import time
+from botocore.config import Config
 
 class TextractService:
     def __init__(self, aws_access_key, aws_secret_key, region):
+        # Configure timeouts
+        config = Config(
+            connect_timeout=1160,
+            read_timeout=1160,
+            retries={'max_attempts': 3}
+        )
+        
         # Initialize Textract client
         self.textract = boto3.client(
             'textract',
             aws_access_key_id=aws_access_key,
             aws_secret_access_key=aws_secret_key,
-            region_name=region
+            region_name=region,
+            config=config
         )
         
         # Initialize S3 client
@@ -16,7 +25,8 @@ class TextractService:
             's3',
             aws_access_key_id=aws_access_key,
             aws_secret_access_key=aws_secret_key,
-            region_name=region
+            region_name=region,
+            config=config
         )
         self.bucket_name = 'sperow-medical-docs'
 
