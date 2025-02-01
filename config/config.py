@@ -21,4 +21,5 @@ class Config:
     ENVIRONMENT = os.getenv('FLASK_ENV', 'development')  # default to development if not specified
     
     # Gemini Configuration
-    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+    GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+    EXA_API_KEY = os.getenv('EXA_API_KEY')

@@ -15,7 +15,8 @@ class OpenAIService:
             model=OpenAIChat(
                 id="gpt-4o-mini",
                 api_key=api_key,
-                temperature=0.1
+                temperature=0.1,
+                request_timeout=60  # Adding 60 second timeout
             ),
             markdown=False
         )
@@ -79,6 +80,15 @@ class OpenAIService:
                 "details": str(e),
                 "raw_content": content[:200]
             }
+
+    def _handle_timeout_error(self):
+        """Handle timeout errors with a structured response"""
+        logger.error("API request timed out")
+        return {
+            "error": "API request timed out",
+            "details": "The request took too long to complete. Please try again.",
+            "status_code": 504
+        }
 
     def get_structured_summary(self, user_id, medical_text):
         """Get comprehensive structured summary of medical record including visualizations and entity analysis"""
@@ -416,9 +426,15 @@ class OpenAIService:
                 result['visualizations'] = visualizations
             
             return result
+        except TimeoutError:
+            return self._handle_timeout_error()
         except Exception as e:
             logger.error(f"Error in get_structured_summary: {str(e)}")
-            return {"error": str(e)}
+            return {
+                "error": "Failed to process request",
+                "details": str(e),
+                "status_code": 500
+            }
 
     def chat_with_doctor(self, user_id, medical_text, question):
         """Chat about the medical record"""

@@ -32,10 +32,7 @@ def search():
         query = data['query']
         context = data.get('context')  # Optional context
         
-        if context:
-            response = gemini_service.structured_search(query, context)
-        else:
-            response = gemini_service.search(query)
+        response = gemini_service.search(query)
             
         if response['success']:
             return jsonify(response), 200
