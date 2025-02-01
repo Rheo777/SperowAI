@@ -7,8 +7,13 @@ logger = logging.getLogger(__name__)
 
 class RedisService:
     def __init__(self):
-        self.redis = redis.from_url(Config.REDIS_URL)
-        self.session_ttl = 3600  # 1 hour session timeout
+        try:
+            self.redis = redis.from_url(Config.REDIS_URL)
+            self.session_ttl = 3600  # 1 hour session timeout
+            self.is_connected = True
+        except redis.ConnectionError:
+            logger.warning("Could not connect to Redis. Running without cache.")
+            self.is_connected = False
 
     def _get_user_key(self, user_id: str, key_type: str) -> str:
         """Generate a unique key for user data"""
@@ -20,6 +25,10 @@ class RedisService:
 
     def set_medical_record(self, user_id: str, data, is_json=False):
         """Store medical record data for a user"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return False
+
         if not self._validate_user_id(user_id):
             logger.error(f"Invalid user_id format: {user_id}")
             return False
@@ -38,6 +47,10 @@ class RedisService:
 
     def get_medical_record(self, user_id: str, is_json=False):
         """Get stored medical record for a user"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return None
+
         if not self._validate_user_id(user_id):
             logger.error(f"Invalid user_id format: {user_id}")
             return None
@@ -58,6 +71,10 @@ class RedisService:
 
     def clear_medical_record(self, user_id: str):
         """Clear stored medical record for a user"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return False
+
         if not self._validate_user_id(user_id):
             logger.error(f"Invalid user_id format: {user_id}")
             return False
@@ -73,6 +90,10 @@ class RedisService:
 
     def clear_all_user_data(self, user_id: str):
         """Clear all data for a user"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return False
+
         if not self._validate_user_id(user_id):
             logger.error(f"Invalid user_id format: {user_id}")
             return False
@@ -90,6 +111,10 @@ class RedisService:
 
     def set_structured_summary(self, user_id: str, summary_data: dict) -> bool:
         """Store structured summary data for a user"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return False
+
         if not self._validate_user_id(user_id):
             logger.error(f"Invalid user_id format: {user_id}")
             return False
@@ -105,6 +130,10 @@ class RedisService:
 
     def get_structured_summary(self, user_id: str) -> dict:
         """Get stored structured summary for a user"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return None
+
         if not self._validate_user_id(user_id):
             logger.error(f"Invalid user_id format: {user_id}")
             return None
@@ -123,6 +152,10 @@ class RedisService:
 
     def get_visualizations(self, user_id: str) -> list:
         """Get visualizations from stored structured summary"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return None
+
         summary = self.get_structured_summary(user_id)
         if not summary:
             return None
@@ -130,6 +163,10 @@ class RedisService:
 
     def get_medical_entities(self, user_id: str) -> dict:
         """Get medical entities from stored structured summary"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return None
+
         summary = self.get_structured_summary(user_id)
         if not summary:
             return None
@@ -137,6 +174,10 @@ class RedisService:
 
     def get_lab_results(self, user_id: str) -> list:
         """Get all lab results from stored structured summary"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return None
+
         summary = self.get_structured_summary(user_id)
         if not summary:
             return None
@@ -144,6 +185,10 @@ class RedisService:
 
     def get_test_results_by_name(self, user_id: str, test_name: str) -> list:
         """Get all results for a specific test from stored structured summary"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return None
+
         lab_results = self.get_lab_results(user_id)
         if not lab_results:
             return []
@@ -151,6 +196,10 @@ class RedisService:
 
     def get_visualization_by_title(self, user_id: str, title: str) -> dict:
         """Get a specific visualization from stored structured summary"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return None
+
         visualizations = self.get_visualizations(user_id)
         if not visualizations:
             return None
@@ -161,6 +210,10 @@ class RedisService:
 
     def get_all_test_names(self, user_id: str) -> list:
         """Get list of all unique test names from stored structured summary"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return None
+
         lab_results = self.get_lab_results(user_id)
         if not lab_results:
             return []
@@ -168,6 +221,10 @@ class RedisService:
 
     def set_cached_text(self, file_name: str, text: str) -> bool:
         """Cache extracted text for development/testing"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return False
+
         try:
             key = f"cached_text:{file_name}"
             self.redis.setex(key, self.session_ttl, text)
@@ -179,6 +236,10 @@ class RedisService:
 
     def get_cached_text(self, file_name: str) -> str:
         """Get cached text for development/testing"""
+        if not self.is_connected:
+            logger.warning("Redis not connected. Skipping cache operation.")
+            return None
+
         try:
             key = f"cached_text:{file_name}"
             data = self.redis.get(key)

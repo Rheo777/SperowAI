@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from json import JSONEncoder
 from routes.auth import auth_bp
 from routes.medical import medical_bp
+from routes.gemini import gemini_bp
 from config.config import Config
 from extensions import mongo, jwt, init_mongo
 from datetime import timedelta
@@ -29,6 +30,7 @@ jwt.init_app(app)
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(medical_bp, url_prefix='/api')
+app.register_blueprint(gemini_bp, url_prefix='/gemini')
 
 # Error handler for JWT
 @jwt.invalid_token_loader
