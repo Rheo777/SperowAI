@@ -4,7 +4,7 @@ import os
 # Worker configuration
 workers = multiprocessing.cpu_count() * 2 + 1
 threads = 2
-worker_class = 'sync'
+worker_class = 'gthread'
 
 # Timeout configuration
 timeout = 1000  # Increased to 5 minutes
