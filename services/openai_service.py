@@ -16,7 +16,7 @@ class OpenAIService:
                 id="gpt-4o-mini",
                 api_key=api_key,
                 temperature=0.1,
-                request_timeout=60  # Adding 60 second timeout
+                request_timeout=1160  # Adding 60 second timeout
             ),
             markdown=False
         )
