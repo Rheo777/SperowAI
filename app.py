@@ -41,4 +41,5 @@ def invalid_token_callback(error):
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
+    print(f"Server is running on port {port}")
     app.run(host='0.0.0.0', port=port)
