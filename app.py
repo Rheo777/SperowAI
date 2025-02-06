@@ -1,5 +1,6 @@
 from flask import Flask, jsonify
 from json import JSONEncoder
+from flask_cors import CORS
 from routes.auth import auth_bp
 from routes.medical import medical_bp
 from routes.gemini import gemini_bp
@@ -15,6 +16,16 @@ class CustomJSONEncoder(JSONEncoder):
             return str(obj)
 
 app = Flask(__name__)
+# Enable CORS
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "Accept"],
+        "supports_credentials": True
+    }
+})
+
 app.config.from_object(Config)
 app.json_encoder = CustomJSONEncoder  # Set custom JSON encoder
 
