@@ -2,10 +2,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from extensions import mongo
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
+import re
 
 class User:
-    def __init__(self, username, password, role='doctor'):
-        self.username = username
+    def __init__(self, email, password, role='doctor'):
+        self.email = email.lower()  # Store email in lowercase
         self.password_hash = generate_password_hash(password)
         self.role = role
 
@@ -15,46 +16,66 @@ class User:
         return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
     @staticmethod
-    def create_user(username, password, role='doctor'):
-        if mongo.db.users.find_one({'username': username}):
-            return False
+    def is_valid_email(email):
+        """Validate email format"""
+        email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+        return bool(email_pattern.match(email))
+
+    @staticmethod
+    def create_user(email, password, role='doctor'):
+        if not User.is_valid_email(email):
+            return False, "Invalid email format"
+            
+        email = email.lower()
+        if mongo.db.users.find_one({'email': email}):
+            return False, "Email already exists"
         
-        user = User(username, password, role)
+        user = User(email, password, role)
         mongo.db.users.insert_one({
-            'username': user.username,
+            'email': user.email,
             'password': user.password_hash,
             'role': user.role,
-            'created_at': datetime.now(timezone.utc)
+            'created_at': datetime.now(timezone.utc),
+            'last_login': None
         })
-        return True
+        return True, "User created successfully"
 
     @staticmethod
-    def get_user(username):
-        user_data = mongo.db.users.find_one({'username': username})
-        if not user_data:
-            return None
-        return user_data
+    def verify_password(email, password):
+        email = email.lower()
+        user = mongo.db.users.find_one({'email': email})
+        if user and check_password_hash(user['password'], password):
+            # Update last login time
+            mongo.db.users.update_one(
+                {'email': email},
+                {
+                    '$set': {
+                        'last_login': datetime.now(timezone.utc),
+                        'last_login_ip': None  # Can be set if IP tracking is needed
+                    }
+                }
+            )
+            return True
+        return False
 
     @staticmethod
-    def verify_password(username, password):
-        user_data = User.get_user(username)
-        if not user_data:
-            return False
-        return check_password_hash(user_data['password'], password)
+    def get_user_by_email(email):
+        email = email.lower()
+        return mongo.db.users.find_one({'email': email})
 
     @staticmethod
-    def start_consultation(doctor_username, record_id):
+    def start_consultation(doctor_email, record_id):
         """Start a consultation timer"""
         # Check if there's already an active consultation
         active = mongo.db.consultations.find_one({
-            'doctor_username': doctor_username,
+            'doctor_email': doctor_email,
             'status': 'active'
         })
         if active:
             return None
 
         consultation = {
-            'doctor_username': doctor_username,
+            'doctor_email': doctor_email,
             'record_id': record_id,
             'start_time': datetime.now(timezone.utc),
             'status': 'active'
@@ -63,14 +84,14 @@ class User:
         return str(result.inserted_id)
 
     @staticmethod
-    def end_consultation(consultation_id, doctor_username):
+    def end_consultation(consultation_id, doctor_email):
         """End a consultation and calculate duration"""
         end_time = datetime.now(timezone.utc)
         
         # Find and update the consultation
         consultation = mongo.db.consultations.find_one({
             '_id': ObjectId(consultation_id),
-            'doctor_username': doctor_username,
+            'doctor_email': doctor_email,
             'status': 'active'
         })
         
@@ -96,12 +117,12 @@ class User:
         return duration
 
     @staticmethod
-    def get_consultation_metrics(doctor_username):
+    def get_consultation_metrics(doctor_email):
         """Get consultation time metrics for a doctor"""
         pipeline = [
             {
                 '$match': {
-                    'doctor_username': doctor_username,
+                    'doctor_email': doctor_email,
                     'status': 'completed'
                 }
             },
@@ -135,15 +156,15 @@ class User:
         }
 
     @staticmethod
-    def get_active_consultation(doctor_username):
+    def get_active_consultation(doctor_email):
         """Get active consultation for a doctor"""
         return mongo.db.consultations.find_one({
-            'doctor_username': doctor_username,
+            'doctor_email': doctor_email,
             'status': 'active'
         })
 
     @staticmethod
-    def get_performance_metrics(doctor_username, period_type):
+    def get_performance_metrics(doctor_email, period_type):
         """Get performance metrics for different time periods"""
         now = datetime.now(timezone.utc)
         
@@ -162,7 +183,7 @@ class User:
         pipeline = [
             {
                 '$match': {
-                    'doctor_username': doctor_username,
+                    'doctor_email': doctor_email,
                     'start_time': {'$gte': start_date}
                 }
             },
@@ -223,7 +244,7 @@ class User:
         return formatted_results
 
     @staticmethod
-    def get_daily_hourly_breakdown(doctor_username, date=None):
+    def get_daily_hourly_breakdown(doctor_email, date=None):
         """Get hourly consultation breakdown for a specific date"""
         if date is None:
             date = datetime.now(timezone.utc)
@@ -239,7 +260,7 @@ class User:
         pipeline = [
             {
                 '$match': {
-                    'doctor_username': doctor_username,
+                    'doctor_email': doctor_email,
                     'start_time': {
                         '$gte': start_of_day,
                         '$lt': end_of_day
