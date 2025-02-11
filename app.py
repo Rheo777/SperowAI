@@ -20,14 +20,19 @@ class CustomJSONEncoder(JSONEncoder):
 
 app = Flask(__name__)
 # Enable CORS
-CORS(app, resources={
-    r"/*": {
-        "origins": ["http://localhost:3000"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization", "Accept"],
-        "supports_credentials": True
-    }
-})
+CORS(app, 
+     resources={
+         r"/*": {
+             "origins": ["http://localhost:3000"],
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "allow_headers": ["Content-Type", "Authorization", "Accept"],
+             "expose_headers": ["Content-Type", "Authorization"],
+             "supports_credentials": True,
+             "send_wildcard": False,
+             "max_age": 86400
+         }
+     },
+     allow_credentials=True)
 
 app.config.from_object(Config)
 app.json_encoder = CustomJSONEncoder  # Set custom JSON encoder
