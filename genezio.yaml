@@ -7,8 +7,8 @@ backend:
           type: httpServer
     language:
         name: python
-        packageManager: pip3
-        runtime: python3.11.x
+        packageManager: pip
+        runtime: python3.13.x
     path: .
 name: SperowAI
 region: us-east-1
