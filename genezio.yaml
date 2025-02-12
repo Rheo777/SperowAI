@@ -8,7 +8,7 @@ backend:
     language:
         name: python
         packageManager: pip
-        runtime: python3.13.x
+        runtime: python3.13.1
     path: .
 name: SperowAI
 region: us-east-1
