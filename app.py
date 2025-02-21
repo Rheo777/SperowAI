@@ -22,7 +22,7 @@ app = Flask(__name__)
 # Enable CORS
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:3000"],
+        "origins": ["http://localhost:3000","https://www.sperow.in"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "Accept"],
         "supports_credentials": True
