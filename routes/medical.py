@@ -240,13 +240,17 @@ def get_performance_stats(period_type):
     
     if period_type not in ['weekly', 'monthly', 'yearly']:
         return jsonify({'error': 'Invalid period type. Must be weekly, monthly, or yearly'}), 400
+    
+    # Get query parameters
+    year = request.args.get('year')
+    month = request.args.get('month')
+    week = request.args.get('week')
         
     try:
-        metrics = User.get_performance_metrics(username, period_type)
-        return jsonify({
-            'period_type': period_type,
-            'metrics': metrics
-        }), 200
+        metrics = User.get_performance_metrics(username, period_type, year, month, week)
+        return jsonify(metrics), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
         logger.error(f"Error getting {period_type} performance metrics: {str(e)}")
         return jsonify({'error': f'Failed to get {period_type} performance metrics'}), 500
@@ -260,10 +264,7 @@ def get_daily_breakdown():
     
     try:
         metrics = User.get_daily_hourly_breakdown(username, date_str)
-        return jsonify({
-            'date': date_str or datetime.now(pytz.utc).date().isoformat(),
-            'hourly_metrics': metrics
-        }), 200
+        return jsonify(metrics), 200
     except ValueError as e:
         return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
     except Exception as e:

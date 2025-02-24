@@ -164,84 +164,158 @@ class User:
         })
 
     @staticmethod
-    def get_performance_metrics(doctor_email, period_type):
+    def get_performance_metrics(doctor_email, period_type, year=None, month=None, week=None):
         """Get performance metrics for different time periods"""
         now = datetime.now(timezone.utc)
         
         if period_type == 'weekly':
-            start_date = now - timedelta(days=7)
-            group_format = '%Y-%U'  # Week number format
-        elif period_type == 'monthly':
-            start_date = now - timedelta(days=30)
-            group_format = '%Y-%m'  # Month format
-        elif period_type == 'yearly':
-            start_date = now - timedelta(days=365)
-            group_format = '%Y'  # Year format
-        else:
-            raise ValueError('Invalid period type')
-
-        pipeline = [
-            {
-                '$match': {
-                    'doctor_email': doctor_email,
-                    'start_time': {'$gte': start_date}
-                }
-            },
-            {
-                '$group': {
-                    '_id': {
-                        'period': {'$dateToString': {'format': group_format, 'date': '$start_time'}},
-                        'status': '$status'
-                    },
-                    'count': {'$sum': 1},
-                    'avg_duration': {
-                        '$avg': {
-                            '$cond': [
-                                {'$eq': ['$status', 'completed']},
-                                '$duration',
-                                None
-                            ]
+            if not year or not month or not week:
+                start_date = now - timedelta(days=7)
+                end_date = now
+            else:
+                # Get the first day of the specified week in the month
+                first_day = datetime.strptime(f"{year}-{month}-1", "%Y-%m-%d")
+                start_date = first_day + timedelta(weeks=int(week))
+                end_date = start_date + timedelta(days=7)
+                
+            pipeline = [
+                {
+                    '$match': {
+                        'doctor_email': doctor_email,
+                        'status': 'completed',
+                        'start_time': {
+                            '$gte': start_date,
+                            '$lt': end_date
                         }
                     }
-                }
-            },
-            {
-                '$group': {
-                    '_id': '$_id.period',
-                    'metrics': {
-                        '$push': {
-                            'status': '$_id.status',
-                            'count': '$count',
-                            'avg_duration': '$avg_duration'
-                        }
+                },
+                {
+                    '$group': {
+                        '_id': {
+                            'dayOfWeek': {'$dayOfWeek': '$start_time'}  # 1 for Sunday through 7 for Saturday
+                        },
+                        'completed_cases': {'$sum': 1}
                     }
-                }
-            },
-            {'$sort': {'_id': 1}}
-        ]
-
-        results = list(mongo.db.consultations.aggregate(pipeline))
-        
-        # Format results
-        formatted_results = []
-        for result in results:
-            period_metrics = {
-                'period': result['_id'],
-                'total_records': 0,
-                'completed_cases': 0,
-                'avg_duration_minutes': 0
+                },
+                {'$sort': {'_id.dayOfWeek': 1}}
+            ]
+            
+            results = list(mongo.db.consultations.aggregate(pipeline))
+            
+            # Initialize metrics for all days
+            days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+            daily_metrics = {day: 0 for day in days}
+            
+            # Fill in actual data
+            for result in results:
+                day_index = result['_id']['dayOfWeek'] - 1  # Convert 1-7 to 0-6
+                daily_metrics[days[day_index]] = result['completed_cases']
+            
+            return {
+                'period_type': 'weekly',
+                'start_date': start_date.isoformat(),
+                'end_date': end_date.isoformat(),
+                'daily_metrics': daily_metrics
             }
             
-            for metric in result['metrics']:
-                if metric['status'] == 'completed':
-                    period_metrics['completed_cases'] = metric['count']
-                    if metric['avg_duration']:
-                        period_metrics['avg_duration_minutes'] = round(metric['avg_duration'] / 60, 2)
-                period_metrics['total_records'] += metric['count']
+        elif period_type == 'monthly':
+            if not year or not month:
+                start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+                end_date = (start_date + timedelta(days=32)).replace(day=1)
+            else:
+                start_date = datetime(int(year), int(month), 1, tzinfo=timezone.utc)
+                end_date = (start_date + timedelta(days=32)).replace(day=1)
                 
-            formatted_results.append(period_metrics)
+            pipeline = [
+                {
+                    '$match': {
+                        'doctor_email': doctor_email,
+                        'status': 'completed',
+                        'start_time': {
+                            '$gte': start_date,
+                            '$lt': end_date
+                        }
+                    }
+                },
+                {
+                    '$group': {
+                        '_id': {
+                            'week': {'$week': '$start_time'}
+                        },
+                        'completed_cases': {'$sum': 1}
+                    }
+                },
+                {'$sort': {'_id.week': 1}}
+            ]
             
-        return formatted_results
+            results = list(mongo.db.consultations.aggregate(pipeline))
+            
+            # Initialize metrics for all weeks
+            weekly_metrics = {f'Week {i}': 0 for i in range(6)}  # Assuming max 6 weeks in a month
+            
+            # Fill in actual data
+            for result in results:
+                week_num = result['_id']['week']
+                relative_week = week_num - results[0]['_id']['week']  # Make week numbers relative to first week
+                weekly_metrics[f'Week {relative_week}'] = result['completed_cases']
+            
+            return {
+                'period_type': 'monthly',
+                'start_date': start_date.isoformat(),
+                'end_date': end_date.isoformat(),
+                'weekly_metrics': weekly_metrics
+            }
+            
+        elif period_type == 'yearly':
+            if not year:
+                start_date = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+                end_date = start_date.replace(year=start_date.year + 1)
+            else:
+                start_date = datetime(int(year), 1, 1, tzinfo=timezone.utc)
+                end_date = datetime(int(year) + 1, 1, 1, tzinfo=timezone.utc)
+                
+            pipeline = [
+                {
+                    '$match': {
+                        'doctor_email': doctor_email,
+                        'status': 'completed',
+                        'start_time': {
+                            '$gte': start_date,
+                            '$lt': end_date
+                        }
+                    }
+                },
+                {
+                    '$group': {
+                        '_id': {
+                            'month': {'$month': '$start_time'}
+                        },
+                        'completed_cases': {'$sum': 1}
+                    }
+                },
+                {'$sort': {'_id.month': 1}}
+            ]
+            
+            results = list(mongo.db.consultations.aggregate(pipeline))
+            
+            # Initialize metrics for all months
+            months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                     'July', 'August', 'September', 'October', 'November', 'December']
+            monthly_metrics = {month: 0 for month in months}
+            
+            # Fill in actual data
+            for result in results:
+                month_index = result['_id']['month'] - 1  # Convert 1-12 to 0-11
+                monthly_metrics[months[month_index]] = result['completed_cases']
+            
+            return {
+                'period_type': 'yearly',
+                'year': start_date.year,
+                'monthly_metrics': monthly_metrics
+            }
+        
+        else:
+            raise ValueError('Invalid period type')
 
     @staticmethod
     def get_daily_hourly_breakdown(doctor_email, date=None):
@@ -261,6 +335,7 @@ class User:
             {
                 '$match': {
                     'doctor_email': doctor_email,
+                    'status': 'completed',
                     'start_time': {
                         '$gte': start_of_day,
                         '$lt': end_of_day
@@ -270,57 +345,32 @@ class User:
             {
                 '$group': {
                     '_id': {
-                        'hour': {'$hour': '$start_time'},
-                        'status': '$status'
+                        'hour': {'$hour': '$start_time'}
                     },
-                    'count': {'$sum': 1},
-                    'avg_duration': {
-                        '$avg': {
-                            '$cond': [
-                                {'$eq': ['$status', 'completed']},
-                                '$duration',
-                                None
-                            ]
-                        }
-                    }
+                    'completed_cases': {'$sum': 1}
                 }
             },
-            {
-                '$group': {
-                    '_id': '$_id.hour',
-                    'metrics': {
-                        '$push': {
-                            'status': '$_id.status',
-                            'count': '$count',
-                            'avg_duration': '$avg_duration'
-                        }
-                    }
-                }
-            },
-            {'$sort': {'_id': 1}}
+            {'$sort': {'_id.hour': 1}}
         ]
 
         results = list(mongo.db.consultations.aggregate(pipeline))
         
-        # Initialize hourly metrics for all 24 hours
-        hourly_metrics = {
-            str(hour).zfill(2): {
-                'hour': str(hour).zfill(2),
-                'total_records': 0,
-                'completed_cases': 0,
-                'avg_duration_minutes': 0
-            }
-            for hour in range(24)
-        }
+        # Initialize hourly metrics for all hours
+        hourly_metrics = []
+        for hour in range(24):
+            start_hour = f"{hour:02d}:00"
+            end_hour = f"{(hour + 1):02d}:00"
+            hourly_metrics.append({
+                'time_range': f"{start_hour}-{end_hour}",
+                'completed_cases': 0
+            })
         
         # Fill in actual data
         for result in results:
-            hour = str(result['_id']).zfill(2)
-            for metric in result['metrics']:
-                if metric['status'] == 'completed':
-                    hourly_metrics[hour]['completed_cases'] = metric['count']
-                    if metric['avg_duration']:
-                        hourly_metrics[hour]['avg_duration_minutes'] = round(metric['avg_duration'] / 60, 2)
-                hourly_metrics[hour]['total_records'] += metric['count']
+            hour = result['_id']['hour']
+            hourly_metrics[hour]['completed_cases'] = result['completed_cases']
         
-        return list(hourly_metrics.values())
+        return {
+            'date': start_of_day.date().isoformat(),
+            'hourly_metrics': hourly_metrics
+        }
