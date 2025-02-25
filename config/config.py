@@ -22,4 +22,5 @@ class Config:
     
     # Gemini Configuration
     GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+    GOOGLE_SEARCH_ENGINE_ID = os.getenv('GOOGLE_SEARCH_ENGINE_ID')
     EXA_API_KEY = os.getenv('EXA_API_KEY')
