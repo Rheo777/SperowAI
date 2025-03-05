@@ -13,7 +13,7 @@ class OpenAIService:
     def __init__(self, api_key):
         self.agent = Agent(
             model=OpenAIChat(
-                id="gpt-4o-mini",
+                id="gpt-4o",
                 api_key=api_key,
                 temperature=0.1,
                 request_timeout=1160  # Adding 60 second timeout
