@@ -1,3 +1,4 @@
+azure-ai-inference==0.1.5
 annotated-types==0.7.0
 anyio==3.7.1
 awsebcli==3.21.0

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from services.textract_service import TextractService
 from services.openai_service import OpenAIService
+from services.azure_openai_service import AzureOpenAIService
 from services.redis_service import RedisService
 from config.config import Config
 from models.user import User
@@ -18,10 +19,22 @@ textract_service = TextractService(
     region=Config.AWS_REGION
 )
 
-openai_service = OpenAIService(Config.OPENAI_API_KEY)
-redis_service = RedisService()
+# Initialize the appropriate LLM service based on configuration
+if Config.LLM_PROVIDER == 'azure_openai':
+    logger = logging.getLogger(__name__)
+    logger.info("Using Azure OpenAI service")
+    llm_service = AzureOpenAIService(
+        api_key=Config.AZURE_OPENAI_API_KEY,
+        endpoint=Config.AZURE_OPENAI_ENDPOINT,
+        model_name=Config.AZURE_OPENAI_MODEL
+    )
+else:
+    # Default to OpenAI
+    logger = logging.getLogger(__name__)
+    logger.info("Using OpenAI service")
+    llm_service = OpenAIService(Config.OPENAI_API_KEY)
 
-logger = logging.getLogger(__name__)
+redis_service = RedisService()
 
 @medical_bp.route('/process-medical-record', methods=['POST'])
 @jwt_required()
@@ -61,8 +74,8 @@ def process_medical_record():
         if not extracted_text:
             return jsonify({'error': 'Failed to extract text from document'}), 400
             
-        # Get structured summary
-        structured_summary = openai_service.get_structured_summary(username, extracted_text)
+        # Get structured summary from the selected LLM service
+        structured_summary = llm_service.get_structured_summary(username, extracted_text)
         
         # Store both raw text and structured summary in Redis
         if not redis_service.set_medical_record(username, extracted_text):
@@ -149,7 +162,7 @@ def chat_with_ai():
         return jsonify({'error': 'Question is required'}), 400
         
     try:
-        response = openai_service.chat_with_doctor(username, medical_text, data['question'])
+        response = llm_service.chat_with_doctor(username, medical_text, data['question'])
         return jsonify({'response': response}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

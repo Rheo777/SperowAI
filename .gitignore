@@ -25,6 +25,7 @@ venv/
 ENV/
 env/
 .env
+.env.example
 
 # IDE
 .idea/
@@ -65,6 +66,8 @@ instance/
 
 # AWS
 .aws/
+.ebextensions/
+.elasticbeanstalk/
 
 # Node modules (if using any JavaScript)
 node_modules/
@@ -77,6 +80,10 @@ node_modules/
 # Test cache
 .pytest_cache/
 .mypy_cache/
+
+# Tests
+tests/
+test_*.py
 
 # Distribution / packaging
 .Python
