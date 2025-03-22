@@ -162,7 +162,7 @@ class AzureOpenAIService:
                             "name": "exact test name",
                             "value": "exact value",
                             "unit": "exact unit",
-                            "timestamp": "exact time", 
+                            "timestamp": "exact time",
                             "reference_range": "if available",
                             "trend": "trend analysis if sequential",
                             "clinical_significance": "result interpretation",
@@ -170,10 +170,209 @@ class AzureOpenAIService:
                         }}
                     ],
                     "critical_values": ["Any critical lab values requiring immediate attention"],
-                }}
+                    "test_trends": [
+                        {{
+                            "test_name": "name of test",
+                            "values_over_time": [
+                                {{
+                                    "value": "exact value",
+                                    "timestamp": "exact time",
+                                    "trend_direction": "increasing/decreasing/stable",
+                                    "clinical_impact": "significance of trend"
+                                }}
+                            ]
+                        }}
+                    ]
+                }},
+                "diagnosis": {{
+                    "primary": {{
+                        "condition": "primary diagnosis",
+                        "certainty": "diagnostic certainty",
+                        "basis": ["clinical findings supporting diagnosis"],
+                        "stage": "stage or severity if applicable"
+                    }},
+                    "secondary": [
+                        {{
+                            "condition": "secondary diagnosis",
+                            "relationship": "relationship to primary diagnosis",
+                            "impact": "impact on treatment plan"
+                        }}
+                    ],
+                    "differential_diagnoses": ["potential alternative diagnoses to consider"],
+                    "ruled_out": ["diagnoses that were considered and ruled out"]
+                }},
+                "medications": {{
+                    "current": [
+                        {{
+                            "name": "medication name",
+                            "dosage": "exact dosage",
+                            "frequency": "administration frequency",
+                            "route": "administration route",
+                            "purpose": "therapeutic purpose",
+                            "start_date": "when started",
+                            "duration": "planned duration",
+                            "side_effects": ["observed side effects"],
+                            "interactions": ["potential drug interactions"],
+                            "monitoring_needs": ["parameters to monitor"]
+                        }}
+                    ],
+                    "discontinued": [
+                        {{
+                            "name": "medication name",
+                            "reason": "reason for discontinuation",
+                            "date_stopped": "when stopped"
+                        }}
+                    ],
+                    "allergies": ["medication allergies and reactions"]
+                }},
+                "treatment_plan": {{
+                    "immediate_actions": ["urgent medical steps"],
+                    "short_term_goals": ["treatment objectives for next 24-48 hours"],
+                    "long_term_goals": ["treatment objectives for discharge"],
+                    "interventions": [
+                        {{
+                            "type": "intervention type",
+                            "details": "specific details",
+                            "frequency": "how often",
+                            "duration": "how long",
+                            "expected_outcome": "anticipated results"
+                        }}
+                    ],
+                    "monitoring_requirements": ["specific parameters to track"],
+                    "lifestyle_modifications": ["recommended lifestyle changes"]
+                }},
+                "follow_up_plan": {{
+                    "appointments": [
+                        {{
+                            "specialist": "type of provider",
+                            "timeframe": "when to follow up",
+                            "purpose": "reason for follow up",
+                            "preparation": ["any required preparation"]
+                        }}
+                    ],
+                    "monitoring": ["parameters to monitor at home"],
+                    "warning_signs": ["symptoms requiring immediate attention"],
+                    "care_coordination": ["coordination between providers"]
+                }},
+                "medical_entities": {{
+                    "conditions": [
+                        {{
+                            "name": "exact condition name",
+                            "status": "current status",
+                            "severity": "severity level",
+                            "first_noted": "onset date",
+                            "risk_factors": [
+                                {{
+                                    "factor": "specific risk factor",
+                                    "impact_percentage": "quantified risk impact",
+                                    "evidence": "clinical evidence",
+                                    "mitigation_strategy": "risk reduction approach"
+                                }}
+                            ],
+                            "correlations": [
+                                {{
+                                    "related_finding": "correlated condition/finding",
+                                    "correlation_strength": "statistical correlation",
+                                    "clinical_significance": "medical importance",
+                                    "evidence_base": "research/clinical evidence supporting correlation"
+                                }}
+                            ],
+                            "future_risks": [
+                                {{
+                                    "potential_condition": "possible future condition",
+                                    "risk_percentage": "probability estimation",
+                                    "time_frame": "expected time of manifestation",
+                                    "preventive_measures": ["specific preventive actions"],
+                                    "supporting_evidence": "clinical basis for prediction",
+                                    "monitoring_plan": "recommended follow-up plan"
+                                }}
+                            ],
+                            "treatment_implications": {{
+                                "recommended_interventions": ["specific treatments"],
+                                "contraindications": ["treatments to avoid"],
+                                "expected_outcomes": ["projected treatment results"]
+                            }}
+                        }}
+                    ],
+                    "vital_signs": [
+                        {{
+                            "name": "measurement name",
+                            "value": "exact value",
+                            "unit": "measurement unit",
+                            "timestamp": "exact time",
+                            "status": "current status",
+                            "clinical_impact": "medical significance",
+                            "trend_analysis": {{
+                                "pattern": "trend pattern",
+                                "significance": "clinical importance",
+                                "recommendations": ["clinical actions based on trend"]
+                            }}
+                        }}
+                    ],
+                    "procedures": [
+                        {{
+                            "name": "procedure name",
+                            "type": "procedure type",
+                            "date": "procedure date",
+                            "outcome": "procedure outcome",
+                            "complications": ["any complications"],
+                            "follow_up_needed": "follow-up requirements"
+                        }}
+                    ],
+                    "medications": [
+                        {{
+                            "name": "medication name",
+                            "class": "medication class",
+                            "indications": ["medical conditions"],
+                            "contraindications": ["conditions where medication should not be used"],
+                            "interactions": ["known drug interactions"],
+                            "monitoring_parameters": ["what to monitor"]
+                        }}
+                    ]
+                }},
+                "visualizations": [
+                    {{
+                        "title": "visualization title",
+                        "type": "chart type",
+                        "data": {{
+                            "x_axis": {{
+                                "label": "time unit",
+                                "values": ["timestamps"]
+                            }},
+                            "y_axis": {{
+                                "label": "measurement with unit",
+                                "values": ["exact values"],
+                                "reference_ranges": ["normal ranges"]
+                            }}
+                        }},
+                        "source": "data source",
+                        "clinical_significance": "medical importance",
+                        "annotations": ["important points to note"],
+                        "recommendations": ["clinical decisions based on visualization"]
+                    }}
+                ]
             }}
 
-            Return ONLY valid JSON without explanation. Ensure all fields are properly formatted.
+            Rules:
+            1. ONLY include information explicitly stated in the record
+            2. Use exact values and dates from the record
+            3. For any missing fields, use "Not Available"
+            4. Do not generate or assume any information
+            5. For risk percentages and correlations, only use explicitly stated numerical values
+            6. Include all relevant timestamps exactly as they appear
+            7. Provide detailed clinical interpretations where data supports it
+            8. Highlight critical values and urgent concerns
+            9. Return ONLY valid JSON, no additional text
+            10. IMPORTANT: Include ALL test results with their exact timestamps - do not skip any results
+            11. For each type of test (e.g., blood tests), create a separate visualization showing trends over time
+            12. If multiple results exist for the same test on different dates, include ALL of them
+            13. Generate visualizations for ALL numeric measurements that have multiple values over time
+
+            Format your response like this:
+            ```json
+            {{
+                "your": "json here"
+            }}
             """
 
             try:
