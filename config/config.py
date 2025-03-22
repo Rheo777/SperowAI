@@ -7,16 +7,10 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY')
     JWT_SECRET_KEY = os.getenv('SECRET_KEY')
     
-    # OpenAI Configuration
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-    
     # Azure OpenAI Configuration
     AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
     AZURE_OPENAI_ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
     AZURE_OPENAI_MODEL = os.getenv('AZURE_OPENAI_MODEL', 'gpt-4o')
-    
-    # LLM Provider selection
-    LLM_PROVIDER = os.getenv('LLM_PROVIDER', 'openai')  # Options: 'openai', 'azure_openai', 'gemini'
     
     # AWS Configuration
     AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')

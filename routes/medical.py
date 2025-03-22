@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from services.textract_service import TextractService
-from services.openai_service import OpenAIService
 from services.azure_openai_service import AzureOpenAIService
 from services.redis_service import RedisService
 from config.config import Config
@@ -19,20 +18,14 @@ textract_service = TextractService(
     region=Config.AWS_REGION
 )
 
-# Initialize the appropriate LLM service based on configuration
-if Config.LLM_PROVIDER == 'azure_openai':
-    logger = logging.getLogger(__name__)
-    logger.info("Using Azure OpenAI service")
-    llm_service = AzureOpenAIService(
-        api_key=Config.AZURE_OPENAI_API_KEY,
-        endpoint=Config.AZURE_OPENAI_ENDPOINT,
-        model_name=Config.AZURE_OPENAI_MODEL
-    )
-else:
-    # Default to OpenAI
-    logger = logging.getLogger(__name__)
-    logger.info("Using OpenAI service")
-    llm_service = OpenAIService(Config.OPENAI_API_KEY)
+# Initialize Azure OpenAI service
+logger = logging.getLogger(__name__)
+logger.info("Using Azure OpenAI service")
+llm_service = AzureOpenAIService(
+    api_key=Config.AZURE_OPENAI_API_KEY,
+    endpoint=Config.AZURE_OPENAI_ENDPOINT,
+    model_name=Config.AZURE_OPENAI_MODEL
+)
 
 redis_service = RedisService()
 
