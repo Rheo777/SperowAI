@@ -28,7 +28,7 @@ class TextractService:
             region_name=region,
             config=config
         )
-        self.bucket_name = 'sperow-medical-docs'
+        self.bucket_name = 'sperow-medical-records'
 
     def upload_to_s3(self, file_bytes, file_name):
         """Upload file to S3"""
